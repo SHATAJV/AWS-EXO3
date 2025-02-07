@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sam-app
+
+  Sample SAM Template for sam-app
+
+Globals:
+  Function:
+    Timeout: 3
+    Tracing: Active
+  Api:
+    TracingEnabled: true
+
+Resources:
+  RestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dev
+      EndpointConfiguration:
+        Type: REGIONAL
+      Models:
+        Employee:
+          type: object
+          required:
+            - name
+            - employee_id
+          properties:
+            name:
+              type: string
+            employee_id:
+              type: integer
+
+  LambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - x86_64
+      Events:
+        GetEmployees:
+          Type: Api
+          Properties:
+            Path: /employee
+            Method: get
+            RestApiId:
+              Ref: RestApi
+        CreateEmployee:
+          Type: Api
+          Properties:
+            Path: /employee
+            Method: post
+            RequestModel:
+              Model: Employee
+              Required: true
+              ValidateBody: true
+            RestApiId:
+              Ref: RestApi
+
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for dev stage for Lambda function
+    Value: !Sub "https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/dev/"
+  LambdaFunctionArn:
+    Description: Lambda Function ARN
+    Value: !GetAtt LambdaFunction.Arn
+  LambdaFunctionIamRole:
+    Description: IAM Role for Lambda Function
+    Value: !GetAtt LambdaFunctionRole.Arn
